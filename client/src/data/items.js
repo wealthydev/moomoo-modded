@@ -423,7 +423,7 @@ exports.weapons = [{
     projectile: 4,
     //hideProjectile: true,
     spdMult: 0.6,
-    speed: 400
+    speed: 1700
 }];
 
 module.exports.list = [{

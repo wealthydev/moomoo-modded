@@ -93,7 +93,7 @@
 	module.exports.bushesPerArea = 3;
 	module.exports.totalRocks = 32;
 	module.exports.goldOres = 7;
-	module.exports.riverWidth = 72;
+	module.exports.riverWidth = //72;
 	module.exports.riverPadding = 11;
 	module.exports.waterCurrent = 0.0011;
 	module.exports.waveSpeed = 0.0001;
@@ -103,13 +103,13 @@
 	module.exports.rockScales = [80, 85, 90];
 
 	// BIOME DATA:
-	module.exports.snowBiomeTop = 240;
+	module.exports.snowBiomeTop = 0//240;
 	module.exports.snowSpeed = 0.75;
 
 	// DATA:
 	module.exports.maxNameLength = 15;
 
 	// MAP:
-	module.exports.mapScale = 1440;
+	module.exports.mapScale = 1440*2;
 	module.exports.mapPingScale = 40;
 	module.exports.mapPingTime = 2200;

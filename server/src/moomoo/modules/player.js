@@ -28,8 +28,9 @@ export class Player {
 
         if (!this.socket) return;
 
-        this.socket.send(JSON.stringify([type, data]));
-
+        try {
+this.socket.send(JSON.stringify([type, data]));
+        } catch(e) {}
     }
 
     setSkin(id) {
@@ -76,7 +77,7 @@ export class Player {
         this.skinColor = 0;
 
         // SPAWN:
-        this.spawn = function(moofoll) {
+        this.spawn = function (moofoll) {
             this.active = true;
             this.alive = true;
             this.lockMove = false;
@@ -105,7 +106,7 @@ export class Player {
             const spawn = objectManager.fetchSpawnObj(this.sid);
 
             if (spawn) {
-                
+
                 [
                     this.x,
                     this.y
@@ -134,25 +135,25 @@ export class Player {
             this.items = [0, 3, 6, 10];
             this.weapons = [0];
             this.shootCount = 0;
-            this.weaponXP = [];
+            this.weaponXP = [0, 0, 0, 0 ,7000, 7000];
             this.reloads = {};
             this.hits = 0;
         };
 
         // RESET MOVE DIR:
-        this.resetMoveDir = function() {
+        this.resetMoveDir = function () {
             this.moveDir = undefined;
         };
 
         // RESET RESOURCES:
-        this.resetResources = function(moofoll) {
+        this.resetResources = function (moofoll) {
             for (var i = 0; i < config.resourceTypes.length; ++i) {
                 this[config.resourceTypes[i]] = 1e6;//moofoll ? 100 : 0;
             }
         };
 
         // ADD ITEM:
-        this.addItem = function(id) {
+        this.addItem = function (id) {
             var tmpItem = items.list[id];
             if (tmpItem) {
                 for (var i = 0; i < this.items.length; ++i) {
@@ -171,7 +172,7 @@ export class Player {
         };
 
         // SET USER DATA:
-        this.setUserData = function(data) {
+        this.setUserData = function (data) {
             if (data) {
                 // SET INITIAL NAME:
                 this.name = "unknown";
@@ -205,11 +206,11 @@ export class Player {
         };
 
         // GET DATA TO SEND:
-        this.getData = function() {
+        this.getData = function () {
             return [this.id, this.sid, this.name, UTILS.fixTo(this.x, 2), UTILS.fixTo(this.y, 2), UTILS.fixTo(this.dir, 3), this.health, this.maxHealth, this.scale, this.skinColor];
         };
 
-        this.getInfo = function() {
+        this.getInfo = function () {
             return [
                 this.sid,
                 Math.round(this.x),
@@ -228,7 +229,7 @@ export class Player {
         };
 
         // SET DATA:
-        this.setData = function(data) {
+        this.setData = function (data) {
             this.id = data[0];
             this.sid = data[1];
             this.name = data[2];
@@ -243,236 +244,235 @@ export class Player {
 
         // UPDATE:
         var timerCount = 0;
-        this.update = function(delta) {
-            delta = 1e3/9;
+        this.update = function (delta) {
             if (!this.alive) {
-    return;
-}
-
-this.chat_cooldown = Math.max(0, this.chat_cooldown - delta);
-this.clan_cooldown = Math.max(0, this.clan_cooldown - delta);
-this.ping_cooldown = Math.max(0, this.ping_cooldown - delta);
-
-if (this.shameTimer > 0) {
-    this.skinIndex = 45;
-    this.shameTimer -= delta;
-    if (this.shameTimer <= 0) {
-        this.skinIndex = 0;
-        this.shameTimer = 0;
-        this.shameCount = 0;
-    }
-}
-
-timerCount -= 1;
-if (timerCount <= 0) {
-    if (this.pps) {
-        this.addResource(3, this.pps, true);
-        this.earnXP(this.pps * 10);
-    }
-
-    var regenAmount = (this.skin && this.skin.healthRegen ? this.skin.healthRegen : 0) + 
-                      (this.tail && this.tail.healthRegen ? this.tail.healthRegen : 0);
-    if (regenAmount) {
-        this.changeHealth(regenAmount, this);
-    }
-
-    if (this.dmgOverTime.dmg) {
-        this.changeHealth(-this.dmgOverTime.dmg, this.dmgOverTime.doer);
-        this.dmgOverTime.time -= 1;
-        if (this.dmgOverTime.time <= 0) {
-            this.dmgOverTime.dmg = 0;
-        }
-    }
-
-    if (this.healCol) {
-        this.changeHealth(this.healCol, this);
-    }
-
-    timerCount = config.serverUpdateRate;
-    this.packet_spam = 0;
-}
-
-if (!this.alive) {
-    return;
-}
-
-if (this.slowMult < 1) {
-    this.slowMult = Math.min(1, this.slowMult + 0.0008 * delta);
-}
-
-this.noMovTimer += delta;
-
-if ((this.xVel | 0) !== 0 || (this.yVel | 0) !== 0) {
-    this.noMovTimer = 0;
-}
-
-if (this.lockMove) {
-    this.xVel = 0;
-    this.yVel = 0;
-} else {
-
-    var buildFlag = (this.buildIndex >= 0) ? 1 : 0;
-    var snowFlag = (this.y <= config.snowBiomeTop) ? 1 : 0;
-    var waterFlag = (!this.zIndex && 
-                    this.y >= config.mapScale / 2 - config.riverWidth / 2 && 
-                    this.y <= config.mapScale / 2 + config.riverWidth / 2) ? 1 : 0;
-
-    var spdMult = (buildFlag ? 0.5 : 1) * 
-                  (items.weapons[this.weaponIndex].spdMult || 1) * 
-                  (this.skin ? this.skin.spdMult || 1 : 1) * 
-                  (this.tail ? this.tail.spdMult || 1 : 1) * 
-                  (snowFlag ? (this.skin && this.skin.coldM ? 1 : config.snowSpeed) : 1) * 
-                  this.slowMult;
-
-    if (waterFlag) {
-        if (this.skin && this.skin.watrImm) {
-            spdMult *= 0.75;
-            this.xVel += config.waterCurrent * 0.4 * delta;
-        } else {
-            spdMult *= 0.33;
-            this.xVel += config.waterCurrent * delta;
-        }
-    }
-
-    var xVel = 0;
-    var yVel = 0;
-
-    if (this.moveDir !== undefined) {
-        xVel = mathCOS(this.moveDir);
-        yVel = mathSIN(this.moveDir);
-
-        var lengthSq = xVel * xVel + yVel * yVel;
-        if (lengthSq > 0) {
-            var invLength = 1 / mathSQRT(lengthSq);
-            xVel *= invLength;
-            yVel *= invLength;
-        }
-    }
-
-    var accel = this.speed * spdMult * delta;
-    if (xVel) {
-        this.xVel += xVel * accel;
-    }
-    if (yVel) {
-        this.yVel += yVel * accel;
-    }
-}
-
-this.zIndex = 0;
-this.lockMove = false;
-this.healCol = 0;
-
-(() => {
-
-    var velX = this.xVel * delta;
-    var velY = this.yVel * delta;
-    var distSq = velX * velX + velY * velY;
-
-    if (distSq < 1) {
-
-        if (velX) this.x += velX;
-        if (velY) this.y += velY;
-
-        var nearbyObjects = objectManager.getNearbyObjects(this.x, this.y, this.scale * 2);
-
-        for (var i = 0; i < nearbyObjects.length; ++i) {
-            if (!nearbyObjects[i].active) continue;
-            objectManager.checkCollision(this, nearbyObjects[i], 1);
-            if (!this.alive) return;
-        }
-
-        return;
-    }
-
-    var dist = mathSQRT(distSq);
-    var depth = Math.min(4, Math.max(1, (dist / 40) | 0));
-    var mlt = 1 / depth;
-    var stepX = velX * mlt;
-    var stepY = velY * mlt;
-
-    var collisionSet = new Set();
-
-    for (var step = 0; step < depth; ++step) {
-
-        if (stepX) this.x += stepX;
-        if (stepY) this.y += stepY;
-
-        var nearbyObjects = objectManager.getNearbyObjects(this.x, this.y, this.scale * 2);
-
-        for (var i = 0; i < nearbyObjects.length; ++i) {
-            var obj = nearbyObjects[i];
-
-            if (!obj.active || collisionSet.has(obj.sid)) {
-                continue;
+                return;
             }
 
-            collisionSet.add(obj.sid);
-            objectManager.checkCollision(this, obj, mlt);
+            this.chat_cooldown = Math.max(0, this.chat_cooldown - delta);
+            this.clan_cooldown = Math.max(0, this.clan_cooldown - delta);
+            this.ping_cooldown = Math.max(0, this.ping_cooldown - delta);
 
-            if (!this.alive) return;
-        }
-
-        if (nearbyObjects.length === 0) {
-            var arrs = objectManager.getGridArrays(this.x, this.y, this.scale);
-
-            for (var x = 0; x < arrs.length; ++x) {
-                for (var y = 0; y < arrs[x].length; ++y) {
-                    var obj = arrs[x][y];
-
-                    if (!obj.active || collisionSet.has(obj.sid)) {
-                        continue;
-                    }
-
-                    collisionSet.add(obj.sid);
-                    objectManager.checkCollision(this, obj, mlt);
-
-                    if (!this.alive) return;
+            if (this.shameTimer > 0) {
+                this.skinIndex = 45;
+                this.shameTimer -= delta;
+                if (this.shameTimer <= 0) {
+                    this.skinIndex = 0;
+                    this.shameTimer = 0;
+                    this.shameCount = 0;
                 }
             }
-        }
-    }
-})();
 
-var tmpIndx = players.indexOf(this);
-for (var i = tmpIndx + 1; i < players.length; ++i) {
+            timerCount -= 1;
+            if (timerCount <= 0) {
+                if (this.pps) {
+                    this.addResource(3, this.pps, true);
+                    this.earnXP(this.pps * 10);
+                }
 
-    if (players[i].alive && players[i] !== this) {
-        objectManager.checkCollision(this, players[i]);
-    }
-}
+                var regenAmount = (this.skin && this.skin.healthRegen ? this.skin.healthRegen : 0) +
+                    (this.tail && this.tail.healthRegen ? this.tail.healthRegen : 0);
+                if (regenAmount) {
+                    this.changeHealth(regenAmount, this);
+                }
 
-var decelFactor = mathPOW(config.playerDecel, delta);
+                if (this.dmgOverTime.dmg) {
+                    this.changeHealth(-this.dmgOverTime.dmg, this.dmgOverTime.doer);
+                    this.dmgOverTime.time -= 1;
+                    if (this.dmgOverTime.time <= 0) {
+                        this.dmgOverTime.dmg = 0;
+                    }
+                }
 
-if (this.xVel) {
-    this.xVel *= decelFactor;
+                if (this.healCol) {
+                    this.changeHealth(this.healCol, this);
+                }
 
-    if (mathABS(this.xVel) < 0.01) {
-        this.xVel = 0;
-    }
-}
+                timerCount = config.serverUpdateRate;
+                this.packet_spam = 0;
+            }
 
-if (this.yVel) {
-    this.yVel *= decelFactor;
+            if (!this.alive) {
+                return;
+            }
 
-    if (mathABS(this.yVel) < 0.01) {
-        this.yVel = 0;
-    }
-}
+            if (this.slowMult < 1) {
+                this.slowMult = Math.min(1, this.slowMult + 0.0008 * delta);
+            }
 
-var minBound = this.scale;
-var maxBound = config.mapScale - this.scale;
+            this.noMovTimer += delta;
 
-if (this.x < minBound) {
-    this.x = minBound;
-} else if (this.x > maxBound) {
-    this.x = maxBound;
-}
+            if ((this.xVel | 0) !== 0 || (this.yVel | 0) !== 0) {
+                this.noMovTimer = 0;
+            }
 
-if (this.y < minBound) {
-    this.y = minBound;
-} else if (this.y > maxBound) {
-    this.y = maxBound;
-}
+            if (this.lockMove) {
+                this.xVel = 0;
+                this.yVel = 0;
+            } else {
+
+                var buildFlag = (this.buildIndex >= 0) ? 1 : 0;
+                var snowFlag = 0 //(this.y <= config.snowBiomeTop) ? 1 : 0;
+                var waterFlag = (!this.zIndex &&
+                    this.y >= config.mapScale / 2 - config.riverWidth / 2 &&
+                    this.y <= config.mapScale / 2 + config.riverWidth / 2) ? 1 : 0;
+
+                var spdMult = (buildFlag ? 0.5 : 1) *
+                    (items.weapons[this.weaponIndex].spdMult || 1) *
+                    (this.skin ? this.skin.spdMult || 1 : 1) *
+                    (this.tail ? this.tail.spdMult || 1 : 1) *
+                    (snowFlag ? (this.skin && this.skin.coldM ? 1 : config.snowSpeed) : 1) *
+                    this.slowMult;
+
+                if (waterFlag) {
+                    if (this.skin && this.skin.watrImm) {
+                        spdMult *= 0.75;
+                        this.xVel += config.waterCurrent * 0.4 * delta;
+                    } else {
+                        spdMult *= 0.33;
+                        this.xVel += config.waterCurrent * delta;
+                    }
+                }
+
+                var xVel = 0;
+                var yVel = 0;
+
+                if (this.moveDir !== null && this.moveDir !== undefined) {
+                    xVel = mathCOS(this.moveDir);
+                    yVel = mathSIN(this.moveDir);
+
+                    var lengthSq = xVel * xVel + yVel * yVel;
+                    if (lengthSq > 0) {
+                        var invLength = 1 / mathSQRT(lengthSq);
+                        xVel *= invLength;
+                        yVel *= invLength;
+                    }
+                }
+
+                var accel = this.speed * spdMult * delta;
+                if (xVel) {
+                    this.xVel += xVel * accel;
+                }
+                if (yVel) {
+                    this.yVel += yVel * accel;
+                }
+            }
+
+            this.zIndex = 0;
+            this.lockMove = false;
+            this.healCol = 0;
+
+            (() => {
+
+                var velX = this.xVel * delta;
+                var velY = this.yVel * delta;
+                var distSq = velX * velX + velY * velY;
+
+                if (distSq < 1) {
+
+                    if (velX) this.x += velX;
+                    if (velY) this.y += velY;
+
+                    var nearbyObjects = objectManager.getNearbyObjects(this.x, this.y, this.scale * 2);
+
+                    for (var i = 0; i < nearbyObjects.length; ++i) {
+                        if (!nearbyObjects[i].active) continue;
+                        objectManager.checkCollision(this, nearbyObjects[i], 1);
+                        if (!this.alive) return;
+                    }
+
+                    return;
+                }
+
+                var dist = mathSQRT(distSq);
+                var depth = Math.min(4, Math.max(1, (dist / 40) | 0));
+                var mlt = 1 / depth;
+                var stepX = velX * mlt;
+                var stepY = velY * mlt;
+
+                var collisionSet = new Set();
+
+                for (var step = 0; step < depth; ++step) {
+
+                    if (stepX) this.x += stepX;
+                    if (stepY) this.y += stepY;
+
+                    var nearbyObjects = objectManager.getNearbyObjects(this.x, this.y, this.scale * 2);
+
+                    for (var i = 0; i < nearbyObjects.length; ++i) {
+                        var obj = nearbyObjects[i];
+
+                        if (!obj.active || collisionSet.has(obj.sid)) {
+                            continue;
+                        }
+
+                        collisionSet.add(obj.sid);
+                        objectManager.checkCollision(this, obj, mlt);
+
+                        if (!this.alive) return;
+                    }
+
+                    if (nearbyObjects.length === 0) {
+                        var arrs = objectManager.getGridArrays(this.x, this.y, this.scale);
+
+                        for (var x = 0; x < arrs.length; ++x) {
+                            for (var y = 0; y < arrs[x].length; ++y) {
+                                var obj = arrs[x][y];
+
+                                if (!obj.active || collisionSet.has(obj.sid)) {
+                                    continue;
+                                }
+
+                                collisionSet.add(obj.sid);
+                                objectManager.checkCollision(this, obj, mlt);
+
+                                if (!this.alive) return;
+                            }
+                        }
+                    }
+                }
+            })();
+
+            var tmpIndx = players.indexOf(this);
+            for (var i = tmpIndx + 1; i < players.length; ++i) {
+
+                if (players[i].alive && players[i] !== this) {
+                    objectManager.checkCollision(this, players[i]);
+                }
+            }
+
+            var decelFactor = mathPOW(config.playerDecel, delta);
+
+            if (this.xVel) {
+                this.xVel *= decelFactor;
+
+                if (mathABS(this.xVel) < 0.01) {
+                    this.xVel = 0;
+                }
+            }
+
+            if (this.yVel) {
+                this.yVel *= decelFactor;
+
+                if (mathABS(this.yVel) < 0.01) {
+                    this.yVel = 0;
+                }
+            }
+
+            var minBound = this.scale;
+            var maxBound = config.mapScale - this.scale;
+
+            if (this.x < minBound) {
+                this.x = minBound;
+            } else if (this.x > maxBound) {
+                this.x = maxBound;
+            }
+
+            if (this.y < minBound) {
+                this.y = minBound;
+            } else if (this.y > maxBound) {
+                this.y = maxBound;
+            }
 
             // USE WEAPON OR TOOL:
             if (this.buildIndex < 0) {
@@ -496,15 +496,22 @@ if (this.y < minBound) {
                                     this.yVel -= items.weapons[this.weaponIndex].rec * mathSIN(this.dir);
                                 }
                                 const add_projectile = (dir) => {
-                        projectileManager.addProjectile(this.x + (projOffset * mathCOS(dir)),
-                        this.y + (projOffset * mathSIN(dir)), dir, items.projectiles[tmpIndx].range * aMlt,
-                        items.projectiles[tmpIndx].speed * aMlt, tmpIndx, this, null, this.zIndex)
-                    };
-                    if(this.weaponIndex === 16) {
-                     for(let i = Math.PI / 8; i >= -Math.PI / 8; i -= Math.PI / 32) {
-                        add_projectile(this.dir + i);
-                    }
-                    } else add_projectile(this.dir);
+                                    projectileManager.addProjectile(this.x + (projOffset * mathCOS(dir)),
+                                        this.y + (projOffset * mathSIN(dir)), dir, items.projectiles[tmpIndx].range * aMlt,
+                                        items.projectiles[tmpIndx].speed * aMlt, tmpIndx, this, null, this.zIndex)
+                                };
+                                if (this.weaponIndex === 16) {
+                                    const offsets = [
+                                        -Math.PI / 8,
+                                        -Math.PI / 24,
+                                        Math.PI / 24,
+                                        Math.PI / 8
+                                    ];
+
+                                    offsets.forEach(o => add_projectile(this.dir + o));
+                                } else {
+                                    add_projectile(this.dir);
+                                }
                             } else {
                                 worked = false;
                             }
@@ -540,7 +547,7 @@ if (this.y < minBound) {
         }
 
         // ADD WEAPON XP:
-        this.addWeaponXP = function(amnt) {
+        this.addWeaponXP = function (amnt) {
             if (!this.weaponXP[this.weaponIndex]) {
                 this.weaponXP[this.weaponIndex] = 0;
             }
@@ -548,7 +555,7 @@ if (this.y < minBound) {
         };
 
         // EARN XP:
-        this.earnXP = function(amount) {
+        this.earnXP = function (amount) {
 
             if (this.age < config.maxAge) {
                 this.XP += amount;
@@ -570,7 +577,7 @@ if (this.y < minBound) {
         };
 
         // CHANGE HEALTH:
-        this.changeHealth = function(amount, doer) {
+        this.changeHealth = function (amount, doer) {
             if (amount > 0 && this.health >= this.maxHealth) {
                 return false;
             }
@@ -605,7 +612,7 @@ if (this.y < minBound) {
         };
 
         // KILL:
-        this.kill = function(doer) {
+        this.kill = function (doer) {
             if (doer && doer.alive) {
                 doer.kills++;
                 if (doer.skin && doer.skin.goldSteal) {
@@ -618,29 +625,37 @@ if (this.y < minBound) {
             this.alive = false;
             this.send("11");
 
-            if(this.name.includes("Bot") && this.socket.auto) this.socket.auto(JSON.stringify(["sp", [{"name":this.name,"moofoll":this.moofoll,"skin":this.skin}]]));
+            if (this.name.includes("Bot") && this.socket.auto) this.socket.auto(JSON.stringify(["sp", [{ "name": this.name, "moofoll": this.moofoll, "skin": this.skin }]]));
 
             iconCallback();
         };
 
         // ADD RESOURCE:
-        this.addResource = function(type, amount, auto) {
+        this.addResource = function (type, amount, auto) {
             if (!auto && amount > 0) {
                 this.addWeaponXP(amount);
             }
-                this[config.resourceTypes[type]] += amount;
-                this.send("9", config.resourceTypes[type], this[config.resourceTypes[type]], 1);
+            this[config.resourceTypes[type]] += amount;
+            this.send("9", config.resourceTypes[type], this[config.resourceTypes[type]], 1);
         };
 
         // CHANGE ITEM COUNT:
-        this.changeItemCount = function(index, value) {
+        this.changeItemCount = function (index, value) {
             this.itemCounts[index] = this.itemCounts[index] || 0;
             this.itemCounts[index] += value;
             this.send("14", index, this.itemCounts[index]);
         };
 
         // BUILD:
-        this.buildItem = function(item) {
+                this.tryBuild =function(item, angle) {
+                    const scale = this.scale + item.scale + (item.placeOffset || 0)
+                    , x = this.x + scale * Math.cos(angle)
+                    , y = this.y + scale * Math.sin(angle);
+                    return this.canBuild(item) && objectManager.checkItemLocation(x, y, item.scale, .6, item.id, !1, this)
+                }
+
+        // BUILD:
+        this.buildItem = function (item) {
             var tmpS = this.scale + item.scale + (item.placeOffset || 0);
             var tmpX = this.x + tmpS * mathCOS(this.dir);
             var tmpY = this.y + tmpS * mathSIN(this.dir);
@@ -650,7 +665,7 @@ if (this.y < minBound) {
                     if (this.hitTime) {
                         var timeSinceHit = Date.now() - this.hitTime;
                         this.hitTime = 0;
-                        if (timeSinceHit <= 120) {
+                        if (timeSinceHit <= 120 && !this.isBot) {
                             this.shameCount++;
                             if (this.shameCount >= 8) {
                                 this.shameTimer = 30000;
@@ -684,7 +699,7 @@ if (this.y < minBound) {
         };
 
         // HAS RESOURCES:
-        this.hasRes = function(item, mult) {
+        this.hasRes = function (item, mult) {
             for (var i = 0; i < item.req.length;) {
                 if (this[item.req[i]] < Math.round(item.req[i + 1] * (mult || 1))) {
                     return false;
@@ -695,7 +710,7 @@ if (this.y < minBound) {
         };
 
         // USE RESOURCES:
-        this.useRes = function(item, mult) {
+        this.useRes = function (item, mult) {
             if (config.inSandbox) {
                 return;
             }
@@ -706,7 +721,7 @@ if (this.y < minBound) {
         };
 
         // CAN BUILD:
-        this.canBuild = function(item) {
+        this.canBuild = function (item) {
             if (config.inSandbox) {
                 return true;
             }
@@ -717,7 +732,7 @@ if (this.y < minBound) {
         };
 
         // GATHER:
-        this.gather = function() {
+        this.gather = function () {
             // SHOW:
             this.noMovTimer = 0;
 
@@ -834,7 +849,7 @@ if (this.y < minBound) {
         };
 
         // SEND ANIMATION:
-        this.sendAnimation = function(hit) {
+        this.sendAnimation = function (hit) {
             for (var i = 0; i < players.length; ++i) {
                 if (this.sentTo[players[i].id] && this.canSee(players[i])) {
                     players[i].send("7", this.sid, hit ? 1 : 0, this.weaponIndex);
@@ -845,7 +860,7 @@ if (this.y < minBound) {
         // ANIMATE:
         var tmpRatio = 0;
         var animIndex = 0;
-        this.animate = function(delta) {
+        this.animate = function (delta) {
             if (this.animTime > 0) {
                 this.animTime -= delta;
                 if (this.animTime <= 0) {
@@ -870,7 +885,7 @@ if (this.y < minBound) {
         };
 
         // GATHER ANIMATION:
-        this.startAnim = function(didHit, index) {
+        this.startAnim = function (didHit, index) {
             this.animTime = this.animSpeed = items.weapons[index].speed;
             this.targetAngle = didHit ? -config.hitAngle : -Math.PI;
             tmpRatio = 0;
@@ -878,7 +893,7 @@ if (this.y < minBound) {
         };
 
         // CAN SEE:
-        this.canSee = function(other) {
+        this.canSee = function (other) {
             if (!other) {
                 return false;
             }

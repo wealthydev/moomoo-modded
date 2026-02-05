@@ -185,123 +185,193 @@ module.exports = function (id, sid, config, UTILS, projectileManager,
     };
 
     var timerCount = 0;
-    this.update = function (delta) {
-        if (!this.alive) return;
-
-        if (this.shameTimer > 0) {
-            this.shameTimer -= delta;
-            if (this.shameTimer <= 0) {
-                this.shameTimer = 0;
-                this.shameCount = 0;
+    this.update = function(delta) {
+            delta = 1e3/9;
+            if (!this.alive) {
+                return;
             }
-        }
 
-        timerCount -= delta;
-        if (timerCount <= 0) {
-            var regenAmount = (this.skin && this.skin.healthRegen ? this.skin.healthRegen : 0) +
-                (this.tail && this.tail.healthRegen ? this.tail.healthRegen : 0);
-            if (regenAmount) {
-                this.changeHealth(regenAmount, this);
+            if (this.chat_cooldown >= 0) {
+                this.chat_cooldown -= delta;
             }
-            if (this.dmgOverTime.dmg) {
-                this.changeHealth(-this.dmgOverTime.dmg, this.dmgOverTime.doer);
-                this.dmgOverTime.time -= 1;
-                if (this.dmgOverTime.time <= 0)
-                    this.dmgOverTime.dmg = 0;
+            if (this.clan_cooldown >= 0) {
+                this.clan_cooldown -= delta;
             }
-            if (this.healCol) {
-                this.changeHealth(this.healCol, this);
+            if (this.ping_cooldown >= 0) {
+                this.ping_cooldown -= delta;
             }
-            timerCount = 1000;
-        }
 
-        if (!this.alive)
-            return;
-
-        if (this.slowMult < 1) {
-            this.slowMult += 0.0008 * delta;
-            if (this.slowMult > 1)
-                this.slowMult = 1;
-        }
-
-        this.noMovTimer += delta;
-        if (this.xVel || this.yVel) this.noMovTimer = 0;
-        if (this.lockMove) {
-            this.xVel = 0;
-            this.yVel = 0;
-        } else {
-            var spdMult = ((this.buildIndex >= 0) ? 0.5 : 1) * (items.weapons[this.weaponIndex].spdMult || 1) *
-                (this.skin ? (this.skin.spdMult || 1) : 1) * (this.tail ? (this.tail.spdMult || 1) : 1) * (this.y <= config.snowBiomeTop ?
-                    ((this.skin && this.skin.coldM) ? 1 : config.snowSpeed) : 1) * this.slowMult;
-            if (!this.zIndex && this.y >= (config.mapScale / 2) - (config.riverWidth / 2) &&
-                this.y <= (config.mapScale / 2) + (config.riverWidth / 2)) {
-                if (this.skin && this.skin.watrImm) {
-                    spdMult *= 0.75;
-                    this.xVel += config.waterCurrent * 0.4 * delta;
-                } else {
-                    spdMult *= 0.33;
-                    this.xVel += config.waterCurrent * delta;
+            // SHAME SHAME SHAME:
+            if (this.shameTimer > 0) {
+                this.skinIndex = 45;
+                this.shameTimer -= delta;
+                if (this.shameTimer <= 0) {
+                    this.skinIndex = 0;
+                    this.shameTimer = 0;
+                    this.shameCount = 0;
                 }
             }
-            var xVel = (this.moveDir != undefined) ? mathCOS(this.moveDir) : 0;
-            var yVel = (this.moveDir != undefined) ? mathSIN(this.moveDir) : 0;
-            var length = mathSQRT(xVel * xVel + yVel * yVel);
-            if (length != 0) {
-                xVel /= length;
-                yVel /= length;
-            }
-            if (xVel) this.xVel += xVel * this.speed * spdMult * delta;
-            if (yVel) this.yVel += yVel * this.speed * spdMult * delta;
-        }
 
-        this.zIndex = 0;
-        this.lockMove = false;
-        this.healCol = 0;
-        var tmpList;
-        var tmpSpeed = UTILS.getDistance(0, 0, this.xVel * delta, this.yVel * delta);
-        var depth = Math.min(4, Math.max(1, Math.round(tmpSpeed / 40)));
-        var tMlt = 1 / depth;
-        for (var i = 0; i < depth; ++i) {
-            if (this.xVel)
-                this.x += (this.xVel * delta) * tMlt;
-            if (this.yVel)
-                this.y += (this.yVel * delta) * tMlt;
-            tmpList = objectManager.getGridArrays(this.x, this.y, this.scale);
-            for (var x = 0; x < tmpList.length; ++x) {
-                for (var y = 0; y < tmpList[x].length; ++y) {
-                    if (tmpList[x][y].active)
-                        objectManager.checkCollision(this, tmpList[x][y], tMlt);
+            // REGENS AND AUTO:
+            timerCount -= 1;
+            if (timerCount <= 0) {
+
+                if (this.pps) {
+                    this.addResource(3, this.pps, true);
+                    this.earnXP(this.pps * 10);
+                }
+
+                var regenAmount = (this.skin && this.skin.healthRegen ? this.skin.healthRegen : 0) + (this.tail && this.tail.healthRegen ? this.tail.healthRegen : 0);
+                if (regenAmount) {
+                    this.changeHealth(regenAmount, this);
+                }
+                if (this.dmgOverTime.dmg) {
+                    this.changeHealth(-this.dmgOverTime.dmg, this.dmgOverTime.doer);
+                    this.dmgOverTime.time -= 1;
+                    if (this.dmgOverTime.time <= 0) {
+                        this.dmgOverTime.dmg = 0;
+                    }
+                }
+
+                if (this.healCol) {
+                    this.changeHealth(this.healCol, this);
+                }
+                timerCount = config.serverUpdateRate;
+
+                this.packet_spam = 0;
+            }
+
+            // CHECK KILL:
+            if (!this.alive) {
+                return;
+            }
+
+            // SLOWER:
+            if (this.slowMult < 1) {
+                this.slowMult += 0.0008 * delta;
+                if (this.slowMult > 1) {
+                    this.slowMult = 1;
                 }
             }
-        }
 
-        var tmpIndx = players.indexOf(this);
-        for (var i = tmpIndx + 1; i < players.length; ++i) {
-            if (players[i] != this && players[i].alive)
-                objectManager.checkCollision(this, players[i]);
-        }
+            // MOVE:
+            this.noMovTimer += delta;
+            if (this.xVel || this.yVel) {
+                this.noMovTimer = 0;
+            }
+            if (this.lockMove) {
+                this.xVel = 0;
+                this.yVel = 0;
+            } else {
+                var spdMult = (this.buildIndex >= 0 ? 0.5 : 1) * (items.weapons[this.weaponIndex].spdMult || 1) * (this.skin ? this.skin.spdMult || 1 : 1) * (this.tail ? this.tail.spdMult || 1 : 1) * (this.y <= config.snowBiomeTop ? this.skin && this.skin.coldM ? 1 : config.snowSpeed : 1) * this.slowMult;
+                if (!this.zIndex && this.y >= config.mapScale / 2 - config.riverWidth / 2 && this.y <= config.mapScale / 2 + config.riverWidth / 2) {
+                    if (this.skin && this.skin.watrImm) {
+                        spdMult *= 0.75;
+                        this.xVel += config.waterCurrent * 0.4 * delta;
+                    } else {
+                        spdMult *= 0.33;
+                        this.xVel += config.waterCurrent * delta;
+                    }
+                }
+                var xVel = this.moveDir != undefined ? mathCOS(this.moveDir) : 0;
+                var yVel = this.moveDir != undefined ? mathSIN(this.moveDir) : 0;
+                var length = mathSQRT(xVel * xVel + yVel * yVel);
+                if (length != 0) {
+                    xVel /= length;
+                    yVel /= length;
+                }
+                if (xVel) {
+                    this.xVel += xVel * this.speed * spdMult * delta;
+                }
+                if (yVel) {
+                    this.yVel += yVel * this.speed * spdMult * delta;
+                }
+            }
 
-        if (this.xVel) {
-            this.xVel *= mathPOW(config.playerDecel, delta);
-            if (this.xVel <= 0.01 && this.xVel >= -0.01) this.xVel = 0;
-        }
-        if (this.yVel) {
-            this.yVel *= mathPOW(config.playerDecel, delta);
-            if (this.yVel <= 0.01 && this.yVel >= -0.01) this.yVel = 0;
-        }
+            // OBJECT COLL:
+            this.zIndex = 0;
+            this.lockMove = false;
+            this.healCol = 0;
 
-        if (this.x - this.scale < 0) {
-            this.x = this.scale;
-        } else if (this.x + this.scale > config.mapScale) {
-            this.x = config.mapScale - this.scale;
-        }
-        if (this.y - this.scale < 0) {
-            this.y = this.scale;
-        } else if (this.y + this.scale > config.mapScale) {
-            this.y = config.mapScale - this.scale;
-        }
+            (() => {
 
-        if (this.buildIndex < 0) {
+                const dist = UTILS.getDistance(0, 0, this.xVel * delta, this.yVel * delta);
+                const depth = Math.min(4, Math.max(1, Math.round(dist / 40)));
+                const mlt = 1 / depth;
+                
+                for (let i = 0; i < depth; i++) {
+                
+                    if (this.xVel) {
+                        this.x += this.xVel * delta * mlt;
+                    }
+                    if (this.yVel) {
+                        this.y += this.yVel * delta * mlt;
+                    }
+
+                    const arrs = objectManager.getGridArrays(this.x, this.y, this.scale);
+                    const already = new Set;
+
+                    for (let x = 0; x < arrs.length; x++) {
+                        for (let y = 0; y < arrs[x].length; y++) {
+
+                            const obj = arrs[x][y];
+                
+                            if (!obj.active || already.has(obj.sid)) {
+                                continue;
+                            }
+                
+                            already.add(obj.sid);
+                            objectManager.checkCollision(this, obj, mlt);
+                
+                            if (!this.alive) return;
+
+                        }
+
+                    }
+                }
+
+            })();
+
+            // PLAYER COLLISIONS:
+            var tmpIndx = players.indexOf(this);
+            for (var i = tmpIndx + 1; i < players.length; ++i) {
+                if (players[i] != this && players[i].alive) {
+                    objectManager.checkCollision(this, players[i]);
+                }
+            }
+
+            // DECEL:
+            if (this.xVel) {
+                this.xVel *= mathPOW(config.playerDecel, delta);
+                if (this.xVel <= 0.01 && this.xVel >= -0.01) {
+                    this.xVel = 0;
+                }
+            }
+            if (this.yVel) {
+                this.yVel *= mathPOW(config.playerDecel, delta);
+                if (this.yVel <= 0.01 && this.yVel >= -0.01) {
+                    this.yVel = 0;
+                }
+            }
+
+            // MAP BOUNDARIES:
+            if (this.x - this.scale < 0) {
+                this.x = this.scale;
+            } else {
+                if (this.x + this.scale > config.mapScale) {
+                    this.x = config.mapScale - this.scale;
+                }
+            }
+            if (this.y - this.scale < 0) {
+                this.y = this.scale;
+            } else {
+                if (this.y + this.scale > config.mapScale) {
+                    this.y = config.mapScale - this.scale;
+                }
+            }
+
+            // USE WEAPON OR TOOL:
+            if (this.buildIndex < 0) {
             if (this.reloads[this.weaponIndex] > 0) {
                 this.reloads[this.weaponIndex] -= delta;
                 this.gathering = this.mouseState;
@@ -340,8 +410,14 @@ module.exports = function (id, sid, config, UTILS, projectileManager,
             }
         }
 
-    };
+            this.hits = 0;
 
+            this.shootCount -= delta;
+            if (this.shootCount <= 0) {
+                this.addProjectile();
+            }
+
+        };
     this.addWeaponXP = function (amnt) {
         if (!this.weaponXP[this.weaponIndex])
             this.weaponXP[this.weaponIndex] = 0;

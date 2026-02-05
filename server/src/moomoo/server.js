@@ -27,10 +27,13 @@ export class Game {
         broadcast: async (type, ...data) => {
             for (const player of this.players) {
                 if (!player.socket) continue;
+                try {
                 player.socket.send(JSON.stringify([
                     type,
                     data
                 ]));
+
+                } catch(e) {}
             }
 
         },
@@ -71,7 +74,7 @@ export class Game {
 
         this.tick = (delta) => {
             const t = performance.now();
-            delta = t - last;
+            delta = 1e3/9 ///t - last;
             last = t;
 
             let kills = 0;
@@ -129,7 +132,7 @@ export class Game {
             }*/
             for (const build of this.game_objects) {
                 const list = items.list[build.id];
-                if (build.isItem && list.name === "turret") {
+                if (build.isItem && list.name === "turret" && build.active) {
                     let short = Infinity, closest;
                     for (var i = 0; i < this.players.length + this.ais.length; ++i) {
                             const tmpObj = this.players[i] || this.ais[i - this.players.length];
@@ -258,6 +261,7 @@ export class Game {
         //setInterval(this.tick, nano);
 
         const init_objects = () => {
+            return
             try {
                 let treesPerArea = config.treesPerArea;
                 let bushesPerArea = config.bushesPerArea;

@@ -213,6 +213,7 @@ items.weapons = [{
     xOff: -8,
     yOff: 59,
     dmg: 40,
+    sDmg: 7.5 * 200,
     spdMult: 0.8,
     range: 118,
     gather: 1,
@@ -234,6 +235,7 @@ items.weapons = [{
     spdMult: 0.82,
     range: 142,
     gather: 1,
+    sDmg: 500,
     speed: 700
 }, {
     id: 6,
@@ -429,7 +431,7 @@ items.weapons = [{
     projectile: 4,
     //hideProjectile: true,
     spdMult: 0.6,
-    speed: 50
+    speed: 1700
 }];
 
 // ITEMS:

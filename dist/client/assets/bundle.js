@@ -109,7 +109,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
 })();
 window.loadedScript = true;
 var isProd = location.hostname !== "127.0.0.1" && !location.hostname.startsWith("192.168.");
-console.log("hey");
+
 //require("./libs/modernizr.js");
 
 var io = __webpack_require__(1);
@@ -132,7 +132,8 @@ var startedConnecting = false;
 function connectSocketIfReady() {
   if (!didLoad) return;
   startedConnecting = true;
-  connectSocket();
+
+  //connectSocket();
 }
 function connectSocket() {
   serverManager.start(function (address, port, gameIndex) {
@@ -1534,6 +1535,7 @@ function updateUpgrades(points, age) {
         };
         tmpItem.onclick = UTILS.checkTrusted(function () {
           io.send("6", i);
+          console.log("Sent upgrade for item index: " + i);
         });
         UTILS.hookTouchEvents(tmpItem);
       })(tmpList[i]);
@@ -1565,9 +1567,7 @@ function updateAge(xp, mxp, age) {
     ageBarBody.style.width = player.XP / player.maxXP * 100 + "%";
   }
 }
-console.log("hey");
 function updateLeaderboard(data) {
-  console.log(data);
   UTILS.removeAllChildren(leaderboardData);
   var tmpC = 1;
   for (var i = 0; i < data.length; i += 3) {
@@ -1741,7 +1741,7 @@ function updateGame() {
     mainContext.strokeStyle = darkOutlineColor;
     for (var i = 0; i < players.length + ais.length; ++i) {
       tmpObj = players[i] || ais[i - players.length];
-      if (tmpObj.visible && !tmpObj.name.includes("Bot")) {
+      if (tmpObj.visible && !tmpObj.name.includes("B2ot")) {
         if (tmpObj.skinIndex != 10 || tmpObj == player || tmpObj.team && tmpObj.team == player.team) {
           var tmpText = (tmpObj.team ? "[" + tmpObj.team + "] " : "") + (tmpObj.name || "");
           if (tmpText != "") {
@@ -2617,12 +2617,6 @@ window.config = config;
 /* 1 */
 /***/ (function(module, exports) {
 
-function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
-function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
-function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
-function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 module.exports = {
   socket: null,
   connected: false,
@@ -2641,8 +2635,7 @@ module.exports = {
         if (type == "io-init") {
           _this.socketId = data[0];
         } else {
-          var _console;
-          (_console = console).log.apply(_console, [type].concat(_toConsumableArray(data)));
+          // console.log(type, ...data)
           events[type].apply(undefined, data);
         }
       };
@@ -3077,7 +3070,8 @@ module.exports.treesPerArea = 9;
 module.exports.bushesPerArea = 3;
 module.exports.totalRocks = 32;
 module.exports.goldOres = 7;
-module.exports.riverWidth = 72;
+module.exports.riverWidth =
+//72;
 module.exports.riverPadding = 11;
 module.exports.waterCurrent = 0.0011;
 module.exports.waveSpeed = 0.0001;
@@ -3087,14 +3081,14 @@ module.exports.bushScales = [80, 85, 95];
 module.exports.rockScales = [80, 85, 90];
 
 // BIOME DATA:
-module.exports.snowBiomeTop = 240;
+module.exports.snowBiomeTop = 0; //240;
 module.exports.snowSpeed = 0.75;
 
 // DATA:
 module.exports.maxNameLength = 15;
 
 // MAP:
-module.exports.mapScale = 1440;
+module.exports.mapScale = 1440 * 2;
 module.exports.mapPingScale = 40;
 module.exports.mapPingTime = 2200;
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(5)))
@@ -3800,7 +3794,7 @@ exports.weapons = [{
   projectile: 4,
   //hideProjectile: true,
   spdMult: 0.6,
-  speed: 400
+  speed: 1700
 }];
 module.exports.list = [{
   group: module.exports.groups[0],

@@ -19,7 +19,7 @@ module.exports = {
                 if (type == "io-init") {
                     _this.socketId = data[0];
                 } else {
-                    console.log(type, ...data)
+                    // console.log(type, ...data)
                     events[type].apply(undefined, data);
                 }
             };

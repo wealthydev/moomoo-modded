@@ -19,7 +19,7 @@
 window.loadedScript = true;
 
 var isProd = location.hostname !== "127.0.0.1" && !location.hostname.startsWith("192.168.");
-console.log("hey")
+
 //require("./libs/modernizr.js");
 
 var io = require('./libs/io-client.js');
@@ -47,7 +47,7 @@ function connectSocketIfReady() {
     if (!didLoad) return;
     startedConnecting = true;
 
-    connectSocket();
+    //connectSocket();
 }
 
 function connectSocket() {
@@ -1720,6 +1720,7 @@ function updateUpgrades(points, age) {
                 };
                 tmpItem.onclick = UTILS.checkTrusted(function () {
                     io.send("6", i);
+                    console.log("Sent upgrade for item index: " + i);
                 });
                 UTILS.hookTouchEvents(tmpItem);
             })(tmpList[i]);
@@ -1756,9 +1757,7 @@ function updateAge(xp, mxp, age) {
     }
 }
 
-console.log("hey")
 function updateLeaderboard(data) {
-    console.log(data)
     UTILS.removeAllChildren(leaderboardData);
     var tmpC = 1;
     for (var i = 0; i < data.length; i += 3) {
@@ -1957,7 +1956,7 @@ function updateGame() {
         mainContext.strokeStyle = darkOutlineColor;
         for (var i = 0; i < players.length + ais.length; ++i) {
             tmpObj = players[i] || ais[i - players.length];
-            if (tmpObj.visible && !tmpObj.name.includes("Bot")) {
+            if (tmpObj.visible && !tmpObj.name.includes("B2ot")) {
 
                 if (tmpObj.skinIndex != 10 || (tmpObj == player) || (tmpObj.team && tmpObj.team == player.team)) {
                     var tmpText = (tmpObj.team ? "[" + tmpObj.team + "] " : "") + (tmpObj.name || "");

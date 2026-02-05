@@ -98,7 +98,7 @@ config.treesPerArea = 1;
 config.bushesPerArea = 1;
 config.totalRocks = 3;
 config.goldOres = 1;
-config.riverWidth = 72;
+config.riverWidth = 0//72;
 config.riverPadding = 11;
 config.waterCurrent = 0.0011;
 config.waveSpeed = 0.0001;
@@ -108,14 +108,14 @@ config.bushScales = [80, 85, 95];
 config.rockScales = [80, 85, 90];
 
 // BIOME DATA:
-config.snowBiomeTop = 240;
+config.snowBiomeTop = 0//240;
 config.snowSpeed = 0.75;
 
 // DATA:
 config.maxNameLength = 15;
 
 // MAP:
-config.mapScale = 1440;
+config.mapScale = 1440*2;
 config.mapPingScale = 40;
 config.mapPingTime = 2200;
 
