@@ -84,6 +84,7 @@ config.weaponVariants = [{
 }];
 config.fetchVariant = function (player) {
   var tmpXP = player.weaponXP[player.weaponIndex] || 0;
+  return config.weaponVariants[0];
   for (var i = config.weaponVariants.length - 1; i >= 0; --i) {
     if (tmpXP >= config.weaponVariants[i].xp) {
       return config.weaponVariants[i];

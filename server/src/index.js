@@ -44,7 +44,7 @@ const INDEX = path.join(CLIENT_DIST_DIR, "index.html");
 
 const PORT = 8080;
 
-const HOST = "localhost";
+const HOST = "0.0.0.0";
 
 
 
@@ -96,25 +96,19 @@ game.onmessage = (ws, message, isFake) => {
 
 
                 player.setUserData(data[0]);
-
                 player.spawn(data[0]?.moofoll);
-
                 player.send("1", player.sid);
 
                 setTimeout(() => {
-
                     for (let age = 0; age < 9; age += 1) player.earnXP(1e8)
 
-                    let set = [5, 18, 32, 24, 10, 34];
+                    let set = [5, 18, 32, 24, 10, 34, 29, 15]//, 4, 15];
 
                     set.forEach(id => {
-                        game.onmessage(player.socket, ["6", [id]], true);
+                       game.onmessage(player.socket, ["6", [id]], true);
                     });
 
                 }, 111);
-
-
-
                 break;
 
             }
@@ -1014,7 +1008,7 @@ app.listen(HOST, PORT, (token) => {
 setInterval(game.tick, 1e3 / 9);
 let bots = [];
 
-for (let i = 0; i < 80; i++) {
+for (let i = 0; i < 50; i++) {
     let socket = { send: function () { }, close: function () { }, emit: function () { } }
 
     socket.auto = (data) => { game.onmessage(socket, data, true); };
@@ -1028,11 +1022,61 @@ for (let i = 0; i < 80; i++) {
     bots.push(bot);
 
     game.onmessage(bot.socket, ["sp", [{ "name": `Bot[${i}]`, "moofoll": null, "skin": Math.floor(Math.random() * 10) }]], true);
+    setTimeout(() => {
+    game.onmessage(bot.socket, ["13c", [1, 6, 0]], true);
+    game.onmessage(bot.socket, ["5", [bot.weapons[1], 1]], true);
+    }, 1e3/5)
 }
 
 setInterval(() => {
     for (let bot of bots) {
-        const correct_spike = (item, aim = getAttackDir(), trap = null) => {
+        if(!bot.alive) game.onmessage(bot.socket, ["sp", [{ "name": `Bot[${Math.floor(Math.random() * 100000)}]`, "moofoll": null, "skin": Math.floor(Math.random() * 10) }]], true);
+        function build(id, angle = 0, repeat = 1, skip) {
+                    let group = items.list[id]?.group.id;
+                    if(group === undefined) return;
+
+                    let passed;
+                    let is_food = passed = id <= 2;
+                    if(!is_food) {
+                        let item = items.list[id];
+                        let canBuild = passed = skip || bot.tryBuild(item, angle);
+                    }
+
+                    if(passed) {
+                        while(repeat > 0) {
+                            repeat -= 1;
+
+                            game.onmessage(bot.socket, ["5", [id, null]], true);
+                            game.onmessage(bot.socket, ["c", [1, angle]], true);
+                game.onmessage(bot.socket, ["c", [0, angle]], true);
+                        }
+                    };
+                }  
+                function move(angle) {
+                    game.onmessage(bot.socket, ["33", [angle]], true);
+                } 
+        function consume() {
+            let amount = (100 - bot.health) / (bot.items[0] === 0 ? 20 : 40)
+            for (let i = 0; i < amount; i += 1) {
+                game.onmessage(bot.socket, ["5", [bot.items[0], null]], true);
+                game.onmessage(bot.socket, ["c", [1, null]], true);
+                game.onmessage(bot.socket, ["c", [0, null]], true);
+            }
+        }
+
+        let trap = game.game_objects.find(c => c.active && c.isItem && c.id === 15 && UTILS.getDistance(c.x, c.y, bot.x, bot.y) <= 50);
+        if(trap) {
+            if(bot.reloads[bot.weaponIndex] <= 0 || !bot.reloads[bot.weaponIndex]) {
+                game.onmessage(bot.socket, ["13c", [0, 49, 0]], true);
+                game.onmessage(bot.socket, ["5", [bot.weaponIndex, 1]], true);
+                game.onmessage(bot.socket, ["c", [1, null]], 1);
+                game.onmessage(bot.socket, ["c", [0, null]], 1);
+                game.onmessage(bot.socket, ["2", [UTILS.getDirection(trap.x, trap.y, bot.x, bot.y)]], 1);
+            } //else game.onmessage(bot.socket, ["13c", [0, 6, 0]], true);
+        }// else game.onmessage(bot.socket, ["13c", [0, 6, 0]], true);
+        if (bot.health < 100 && Date.now() - bot.hitTime >= 0) consume();
+  /*     
+  const correct_spike = (item, aim = getAttackDir(), trap = null) => {
                 if (!item) return null
 
                 const rng = 35 + item.scale + (item.placeOffset || 0);
@@ -1136,42 +1180,7 @@ setInterval(() => {
                     arcs
                 };
             };
-
-        function build(id, angle = 0, repeat = 1, skip) {
-                    let group = items.list[id]?.group.id;
-                    if(group === undefined) return;
-
-                    let passed;
-                    let is_food = passed = id <= 2;
-                    if(!is_food) {
-                        let item = items.list[id];
-                        let canBuild = passed = skip || bot.tryBuild(item, angle);
-                    }
-
-                    if(passed) {
-                        while(repeat > 0) {
-                            repeat -= 1;
-
-                            game.onmessage(bot.socket, ["5", [id, null]], true);
-                            game.onmessage(bot.socket, ["c", [1, angle]], true);
-                game.onmessage(bot.socket, ["c", [0, angle]], true);
-                        }
-                    };
-                }  
-                function move(angle) {
-                    game.onmessage(bot.socket, ["33", [angle]], true);
-                } 
-        function consume() {
-            let amount = (100 - bot.health) / (bot.items[0] === 0 ? 20 : 40)
-            for (let i = 0; i < amount; i += 1) {
-                game.onmessage(bot.socket, ["5", [bot.items[0], null]], true);
-                game.onmessage(bot.socket, ["c", [1, null]], true);
-                game.onmessage(bot.socket, ["c", [0, null]], true);
-            }
-        }
-
-        if (bot.health < 100 && Date.now() - bot.hitTime >= 0) consume();
-  /*      let targets = game.players.filter(p => p.alive && !p.isBot && p.sid !== bot.sid && (!bot.team || p.team !== bot.team)).sort((obj, obj2) => {
+             let targets = game.players.filter(p => p.alive && !p.isBot && p.sid !== bot.sid && (!bot.team || p.team !== bot.team)).sort((obj, obj2) => {
                     const dist = [UTILS.getDistance(bot.x2, bot.y2, obj.x2, obj.y2), UTILS.getDistance(bot.x2, bot.y2, obj2.x2, obj2.y2)];
                     return (dist[0] - dist[1]);
                 }),
