@@ -213,7 +213,6 @@ items.weapons = [{
     xOff: -8,
     yOff: 59,
     dmg: 40,
-    sDmg: 7.5 * 200,
     spdMult: 0.8,
     range: 118,
     gather: 1,
@@ -232,10 +231,10 @@ items.weapons = [{
     yOff: 53,
     dmg: 45,
     knock: 0.2,
+    sDmg: 0.0001,
     spdMult: 0.82,
     range: 142,
     gather: 1,
-    sDmg: 500,
     speed: 700
 }, {
     id: 6,
@@ -318,7 +317,7 @@ items.weapons = [{
     dmg: 10,
     spdMult: 0.88,
     range: 75,
-    sDmg: 7.5,
+    sDmg: 0.00001,//7.5,
     gather: 1,
     speed: 400
 }, {

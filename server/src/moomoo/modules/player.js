@@ -135,7 +135,7 @@ this.socket.send(JSON.stringify([type, data]));
             this.items = [0, 3, 6, 10];
             this.weapons = [0];
             this.shootCount = 0;
-            this.weaponXP = [0, 0, 0, 0 ,7000, 7000];
+            this.weaponXP = [];
             this.reloads = {};
             this.hits = 0;
         };
@@ -542,7 +542,7 @@ this.socket.send(JSON.stringify([type, data]));
             })[0];
             if (!nearPlayer) return;
             if (getDist(nearPlayer) > 735) return;
-            projectileManager.addProjectile(this.x, this.y, getDirect(nearPlayer), this.skin.turret.range, 1.6, this.skin.turret.proj, this, 0, 1);
+            projectileManager.addProjectile(this.x, this.y, getDirect(nearPlayer), this.skin.turret.range, 1.5, this.skin.turret.proj, this, 0, 1);
             this.shootCount = 2500;
         }
 
